@@ -8,6 +8,9 @@ export default class Connection
 		/** @private */
 		this._vars = {};
 
+		/** @private */
+		this._pingQueue = {};
+
 		/**
 		 * Event handlers
 		 * @private
@@ -28,7 +31,7 @@ export default class Connection
 	/**
 	 * Get/set shared variable
 	 * @param { string } name - variable name
-	 * @param { * } value - value to be set to
+	 * @param { any } value - value to be set to
 	 */
 	var(name, value = undefined)
 	{
@@ -50,6 +53,7 @@ export default class Connection
 		this._fireEvent("varupdate", name, value, true);
 		return value;
 	}
+
 
 	/* ============ Event System ============ */
 
@@ -81,6 +85,9 @@ export default class Connection
 			callback(...args);
 	}
 
+
+	/* ============ Connection Handling ============ */
+
 	/**
 	 * Send data to peer
 	 * @param {*} data - data to be sent
@@ -95,25 +102,49 @@ export default class Connection
 	}
 
 	/**
+	 * Get ping time in ms
+	 * @returns { Promise<number> }
+	 */
+	ping()
+	{
+		let timeStart = Date.now();
+		this._dataConnection.send({ type: "ping", time: timeStart });
+		return new Promise(resp =>
+		{
+			this._pingQueue[timeStart] = resp;
+		});
+	}
+
+	/**
 	 * Parse recieved data
 	 * @private
 	 * @param { any } data - data to parse
 	 */
 	_onData(data)
 	{
-		if (data?.type == "var")
+		switch(data?.type)
 		{
-			this._vars[data.name] = data.value;
-			this._fireEvent("varupdate", data.name, data.value, false);
-		}
-		if (data?.type == "data")
-		{
-			this._fireEvent("data", data.data);
-		}
-		else
-		{
-			this._fireEvent("unknowndata", data);
-			// console.log("Recieved data:", data);
+			case "var":
+				this._vars[data.name] = data.value;
+				this._fireEvent("varupdate", data.name, data.value, false);
+				break;
+			
+			case "data":
+				this._fireEvent("data", data.data);
+				break;
+			
+			case "ping":
+					this._dataConnection.send({ type: "pong", time: data.time });
+					break;
+			
+			case "pong":
+				let time = Date.now() - data.time;
+				this._pingQueue[data.time](time);
+				delete this._pingQueue[data.time];
+				break;
+			
+			default:
+				this._fireEvent("unknowndata", data);
 		}
 	}
 }
