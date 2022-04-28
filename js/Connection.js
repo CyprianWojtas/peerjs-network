@@ -134,8 +134,8 @@ export default class Connection
 				break;
 			
 			case "ping":
-					this._dataConnection.send({ type: "pong", time: data.time });
-					break;
+				this._dataConnection.send({ type: "pong", time: data.time });
+				break;
 			
 			case "pong":
 				let time = Date.now() - data.time;
