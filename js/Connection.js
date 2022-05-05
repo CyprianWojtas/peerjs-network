@@ -102,7 +102,21 @@ export default class Connection
 	}
 
 	/**
+	 * Sending network management data
+	 * @param {*} data - data to be sent
+	 */
+	sendNetwork(data)
+	{
+		this._dataConnection.send(
+		{
+			type: "networkData",
+			data
+		});
+	}
+
+	/**
 	 * Get ping time in ms
+	 * @async
 	 * @returns { Promise<number> }
 	 */
 	ping()
@@ -113,6 +127,14 @@ export default class Connection
 		{
 			this._pingQueue[timeStart] = resp;
 		});
+	}
+
+	/**
+	 * Closes connection
+	 */
+	close()
+	{
+		this._dataConnection.close();
 	}
 
 	/**
@@ -130,9 +152,13 @@ export default class Connection
 				break;
 			
 			case "data":
-				this._fireEvent("data", data.data);
+				this._fireEvent("recieveddata", data.data);
 				break;
-			
+		
+			case "networkData":
+				this._fireEvent("recievednetworkdata", data.data);
+				break;
+		
 			case "ping":
 				this._dataConnection.send({ type: "pong", time: data.time });
 				break;
@@ -144,7 +170,12 @@ export default class Connection
 				break;
 			
 			default:
-				this._fireEvent("unknowndata", data);
+				this._fireEvent("recievedunknowndata", data);
 		}
+	}
+
+	toString()
+	{
+		return `Connection ${ this._dataConnection.peer } — ${ this._dataConnection.connectionId }`;
 	}
 }

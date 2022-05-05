@@ -1,5 +1,6 @@
 import Connection from "./Connection.js";
-import ConnectionManager from "./ConnectionManager.js";
+import Network from "./Network.js";
+import StarNetwork from "./StarNetwork.js";
 
 let localPeerIdEl = document.createElement("div");
 
@@ -8,7 +9,7 @@ let connectionConnectBtnEl = document.createElement("button");
 connectionConnectBtnEl.append("Connect!");
 
 
-let cm = new ConnectionManager();
+let cm = new StarNetwork(true);
 
 // @ts-ignore
 window.cm = cm;
